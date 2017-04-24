@@ -12,7 +12,7 @@ from tensorflow.examples.tutorials.mnist import input_data
 mnist_image_shape = [28, 28, 1]
 
 def load_dataset():
-    return input_data.read_data_sets('MNIST_data')
+    return input_data.read_data_sets('../data/mnist')
 
 def get_next_batch(dataset, batch_size):
     # dataset should be mnist.(train/val/test)
