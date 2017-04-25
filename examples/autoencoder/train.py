@@ -7,20 +7,18 @@ batch_size = 100
 batch_shape = (batch_size, 28, 28, 1)
 num_visualize = 10
 
-lr = 0.01
-num_epochs = 50
+lr = 0.001
+num_epochs = 100
 
 
 def calculate_loss(original, reconstructed):
-    return tf.div(tf.reduce_sum(tf.square(tf.subtract(reconstructed,
-                                                      original))),
-                  tf.constant(float(batch_size)))
+    return tf.reduce_mean(tf.square(reconstructed - original))
 
 
 def train(dataset):
     input_image, reconstructed_image = autoencoder(batch_shape)
     loss = calculate_loss(input_image, reconstructed_image)
-    optimizer = tf.train.GradientDescentOptimizer(lr).minimize(loss)
+    optimizer = tf.train.AdamOptimizer(lr).minimize(loss)
 
     init = tf.global_variables_initializer()
     with tf.Session() as session:

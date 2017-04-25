@@ -135,7 +135,7 @@ optimizer = tf.train.AdamOptimizer(LEARNING_RATE).minimize(loss, global_step=glo
 
 with tf.Session() as sess:
     sess.run(tf.global_variables_initializer())
-    summary = tf.get_summary_op()
+    summary_op = tf.summary.merge_all()
     saver = tf.train.Saver()
     # to visualize using TensorBoard
     writer = tf.summary.FileWriter('./my_graph/mnist', sess.graph)
@@ -153,8 +153,9 @@ with tf.Session() as sess:
     total_loss = 0.0
     for index in range(initial_step, n_batches * N_EPOCHS): # train the model n_epochs times
         X_batch, Y_batch = mnist.train.next_batch(BATCH_SIZE)
-        _, loss_batch = sess.run([optimizer, loss, summary], 
+        _, loss_batch, summary = sess.run([optimizer, loss, summary_op], 
                                 feed_dict={X: X_batch, Y:Y_batch, dropout: DROPOUT}) 
+        writer.add_summary(summary, global_step=index)
         total_loss += loss_batch
         if (index + 1) % SKIP_STEP == 0:
             print('Average loss at step {}: {:5.1f}'.format(index + 1, total_loss / SKIP_STEP))
