@@ -16,7 +16,7 @@ See readme.md for instruction on how to run the starter code.
 """
 
 # parameters for processing the dataset
-DATA_PATH = '/Users/Chip/data/cornell movie-dialogs corpus'
+DATA_PATH = './data/cornell movie-dialogs corpus'
 CONVO_FILE = 'movie_conversations.txt'
 LINE_FILE = 'movie_lines.txt'
 OUTPUT_FILE = 'output_convo.txt'
@@ -57,3 +57,11 @@ LR = 0.5
 MAX_GRAD_NORM = 5.0
 
 NUM_SAMPLES = 512
+ENC_VOCAB = 24475
+DEC_VOCAB = 24608
+ENC_VOCAB = 24453
+DEC_VOCAB = 24618
+ENC_VOCAB = 24400
+DEC_VOCAB = 24658
+ENC_VOCAB = 24377
+DEC_VOCAB = 24666

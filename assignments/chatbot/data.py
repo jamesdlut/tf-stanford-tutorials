@@ -31,7 +31,7 @@ def get_lines():
     with open(file_path, 'rb') as f:
         lines = f.readlines()
         for line in lines:
-            parts = line.split(' +++$+++ ')
+            parts = line.split(b' +++$+++ ')
             if len(parts) == 5:
                 if parts[4][-1] == '\n':
                     parts[4] = parts[4][:-1]
@@ -44,10 +44,10 @@ def get_convos():
     convos = []
     with open(file_path, 'rb') as f:
         for line in f.readlines():
-            parts = line.split(' +++$+++ ')
+            parts = line.split(b' +++$+++ ')
             if len(parts) == 4:
                 convo = []
-                for line in parts[3][1:-2].split(', '):
+                for line in parts[3][1:-2].split(b', '):
                     convo.append(line[1:-1])
                 convos.append(convo)
 
@@ -75,13 +75,14 @@ def prepare_dataset(questions, answers):
     for filename in filenames:
         files.append(open(os.path.join(config.PROCESSED_PATH, filename),'wb'))
 
+    print('going to write {} questions'.format(len(questions)))
     for i in range(len(questions)):
         if i in test_ids:
-            files[2].write(questions[i] + '\n')
-            files[3].write(answers[i] + '\n')
+            files[2].write(questions[i] + b'\n')
+            files[3].write(answers[i] + b'\n')
         else:
-            files[0].write(questions[i] + '\n')
-            files[1].write(answers[i] + '\n')
+            files[0].write(questions[i] + b'\n')
+            files[1].write(answers[i] + b'\n')
 
     for file in files:
         file.close()
@@ -96,13 +97,13 @@ def make_dir(path):
 def basic_tokenizer(line, normalize_digits=True):
     """ A basic tokenizer to tokenize text into tokens.
     Feel free to change this to suit your need. """
-    line = re.sub('<u>', '', line)
-    line = re.sub('</u>', '', line)
-    line = re.sub('\[', '', line)
-    line = re.sub('\]', '', line)
+    line = re.sub(b'<u>', b'', line)
+    line = re.sub(b'</u>', b'', line)
+    line = re.sub(br'\[', b'', line)
+    line = re.sub(br'\]', b'', line)
     words = []
     _WORD_SPLIT = re.compile(b"([.,!?\"'-<>:;)(])")
-    _DIGIT_RE = re.compile(r"\d")
+    _DIGIT_RE = re.compile(br"\d")
     for fragment in line.strip().lower().split():
         for token in re.split(_WORD_SPLIT, fragment):
             if not token:
@@ -126,20 +127,20 @@ def build_vocab(filename, normalize_digits=True):
 
     sorted_vocab = sorted(vocab, key=vocab.get, reverse=True)
     with open(out_path, 'wb') as f:
-        f.write('<pad>' + '\n')
-        f.write('<unk>' + '\n')
-        f.write('<s>' + '\n')
-        f.write('<\s>' + '\n') 
+        f.write(b'<pad>' + b'\n')
+        f.write(b'<unk>' + b'\n')
+        f.write(b'<s>' + b'\n')
+        f.write(b'</s>' + b'\n') 
         index = 4
         for word in sorted_vocab:
             if vocab[word] < config.THRESHOLD:
                 with open('config.py', 'ab') as cf:
                     if filename[-3:] == 'enc':
-                        cf.write('ENC_VOCAB = ' + str(index) + '\n')
+                        cf.write(b'ENC_VOCAB = ' + str(index).encode('ascii') + b'\n')
                     else:
-                        cf.write('DEC_VOCAB = ' + str(index) + '\n')
+                        cf.write(b'DEC_VOCAB = ' + str(index).encode('ascii') + b'\n')
                 break
-            f.write(word + '\n')
+            f.write(word + b'\n')
             index += 1
 
 def load_vocab(vocab_path):
@@ -148,7 +149,7 @@ def load_vocab(vocab_path):
     return words, {words[i]: i for i in range(len(words))}
 
 def sentence2id(vocab, line):
-    return [vocab.get(token, vocab['<unk>']) for token in basic_tokenizer(line)]
+    return [vocab.get(token, vocab[b'<unk>']) for token in basic_tokenizer(line)]
 
 def token2id(data, mode):
     """ Convert all the tokens in the data into their corresponding
@@ -156,7 +157,6 @@ def token2id(data, mode):
     vocab_path = 'vocab.' + mode
     in_path = data + '.' + mode
     out_path = data + '_ids.' + mode
-
     _, vocab = load_vocab(os.path.join(config.PROCESSED_PATH, vocab_path))
     in_file = open(os.path.join(config.PROCESSED_PATH, in_path), 'rb')
     out_file = open(os.path.join(config.PROCESSED_PATH, out_path), 'wb')
@@ -164,14 +164,14 @@ def token2id(data, mode):
     lines = in_file.read().splitlines()
     for line in lines:
         if mode == 'dec': # we only care about '<s>' and </s> in encoder
-            ids = [vocab['<s>']]
+            ids = [vocab[b'<s>']]
         else:
             ids = []
         ids.extend(sentence2id(vocab, line))
         # ids.extend([vocab.get(token, vocab['<unk>']) for token in basic_tokenizer(line)])
         if mode == 'dec':
-            ids.append(vocab['<\s>'])
-        out_file.write(' '.join(str(id_) for id_ in ids) + '\n')
+            ids.append(vocab[b'</s>'])
+        out_file.write(b' '.join(str(id_).encode('ascii') for id_ in ids) + b'\n')
 
 def prepare_raw_data():
     print('Preparing raw data into train set and test set ...')
@@ -193,6 +193,8 @@ def load_data(enc_filename, dec_filename, max_training_size=None):
     encode_file = open(os.path.join(config.PROCESSED_PATH, enc_filename), 'rb')
     decode_file = open(os.path.join(config.PROCESSED_PATH, dec_filename), 'rb')
     encode, decode = encode_file.readline(), decode_file.readline()
+    encode = encode.decode('ascii')
+    decode = decode.decode('ascii')
     data_buckets = [[] for _ in config.BUCKETS]
     i = 0
     while encode and decode:
@@ -205,6 +207,8 @@ def load_data(enc_filename, dec_filename, max_training_size=None):
                 data_buckets[bucket_id].append([encode_ids, decode_ids])
                 break
         encode, decode = encode_file.readline(), decode_file.readline()
+        encode = encode.decode('ascii')
+        decode = decode.decode('ascii')
         i += 1
     return data_buckets
 
@@ -215,9 +219,9 @@ def _reshape_batch(inputs, size, batch_size):
     """ Create batch-major inputs. Batch inputs are just re-indexed inputs
     """
     batch_inputs = []
-    for length_id in xrange(size):
+    for length_id in range(size):
         batch_inputs.append(np.array([inputs[batch_id][length_id]
-                                    for batch_id in xrange(batch_size)], dtype=np.int32))
+                                    for batch_id in range(batch_size)], dtype=np.int32))
     return batch_inputs
 
 
@@ -227,7 +231,7 @@ def get_batch(data_bucket, bucket_id, batch_size=1):
     encoder_size, decoder_size = config.BUCKETS[bucket_id]
     encoder_inputs, decoder_inputs = [], []
 
-    for _ in xrange(batch_size):
+    for _ in range(batch_size):
         encoder_input, decoder_input = random.choice(data_bucket)
         # pad both encoder and decoder, reverse the encoder
         encoder_inputs.append(list(reversed(_pad_input(encoder_input, encoder_size))))
@@ -239,9 +243,9 @@ def get_batch(data_bucket, bucket_id, batch_size=1):
 
     # create decoder_masks to be 0 for decoders that are padding.
     batch_masks = []
-    for length_id in xrange(decoder_size):
+    for length_id in range(decoder_size):
         batch_mask = np.ones(batch_size, dtype=np.float32)
-        for batch_id in xrange(batch_size):
+        for batch_id in range(batch_size):
             # we set mask to 0 if the corresponding target is a PAD symbol.
             # the corresponding decoder is decoder_input shifted by 1 forward.
             if length_id < decoder_size - 1:
